@@ -19,24 +19,24 @@
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <style>
-        body{
-              font-family: "Vazirmatn", "Poppins", serif;;
-
-        }
+      body {
+        font-family: "Vazirmatn", "Poppins", serif;
+      }
     </style>
   </head>
   <body>
     <div id="app">
-      <h1>TensorFlow.js با Vue.js</h1>
-      <p>دو عدد وارد کنید:</p>
-      <input v-model.number="input1" type="number" placeholder="عدد اول" />
-      <input v-model.number="input2" type="number" placeholder="عدد دوم" />
-      <button @click="predict">پیش‌بینی</button>
+      <div class="container">
+        <h1>TensorFlow.js با Vue.js</h1>
+        <p>دو عدد وارد کنید:</p>
+        <input v-model.number="input1" type="number" placeholder="عدد اول" />
+        <input v-model.number="input2" type="number" placeholder="عدد دوم" />
+        <button @click="predict">پیش‌بینی</button>
 
-      <p v-if="prediction !== null">نتیجه پیش‌بینی: {{ prediction }}</p>
-      <p v-else>لطفاً اعداد را وارد کنید و روی دکمه پیش‌بینی کلیک کنید.</p>
+        <p v-if="prediction !== null">نتیجه پیش‌بینی: {{ prediction }}</p>
+        <p v-else>لطفاً اعداد را وارد کنید و روی دکمه پیش‌بینی کلیک کنید.</p>
+      </div>
     </div>
-
     <script>
       const { createApp, ref } = Vue;
 
