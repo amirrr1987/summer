@@ -65,21 +65,31 @@
 
           // آموزش مدل
           async function trainModel(model) {
-            const inputs = tf.tensor2d([
-              [1, 2],
-              [2, 3],
-              [3, 4],
-            ]);
-            const outputs = tf.tensor2d([[3], [5], [7]]);
-            await model.fit(inputs, outputs, { epochs: 100 });
-            console.log("Model trained!");
-            return model;
+            try {
+              const inputs = tf.tensor2d([
+                [1, 2],
+                [2, 3],
+                [3, 4],
+              ]);
+              const outputs = tf.tensor2d([[3], [5], [7]]);
+              await model.fit(inputs, outputs, { epochs: 100 });
+              console.log("Model trained!");
+              return model;
+            } catch (error) {
+              alert("خطا در آموزش مدل: " + error.message);
+              console.error("Error training model:", error);
+            }
           }
 
           // ذخیره مدل در localStorage
           async function saveModel(model) {
-            const savedModel = await model.save("localstorage://my-model");
-            console.log("Model saved to localStorage.");
+            try {
+              await model.save("localstorage://my-model");
+              console.log("Model saved to localStorage.");
+            } catch (error) {
+              alert("خطا در ذخیره مدل: " + error.message);
+              console.error("Error saving model:", error);
+            }
           }
 
           // بارگذاری مدل از localStorage
@@ -98,29 +108,39 @@
 
           // پیش‌بینی
           async function predict() {
-            if (input1.value === null || input2.value === null) {
-              alert("لطفاً هر دو عدد را وارد کنید.");
-              return;
+            try {
+              if (input1.value === null || input2.value === null) {
+                alert("لطفاً هر دو عدد را وارد کنید.");
+                return;
+              }
+
+              // تبدیل ورودی‌ها به تانسور
+              const inputTensor = tf.tensor2d([[input1.value, input2.value]]);
+
+              // انجام پیش‌بینی
+              const result = model.value.predict(inputTensor);
+              const resultData = await result.data(); // تبدیل به آرایه
+              prediction.value = resultData[0].toFixed(2); // ذخیره نتیجه پیش‌بینی
+            } catch (error) {
+              alert("خطا در پیش‌بینی: " + error.message);
+              console.error("Error predicting:", error);
             }
-
-            // تبدیل ورودی‌ها به تانسور
-            const inputTensor = tf.tensor2d([[input1.value, input2.value]]);
-
-            // انجام پیش‌بینی
-            const result = model.value.predict(inputTensor);
-            const resultData = await result.data(); // تبدیل به آرایه
-            prediction.value = resultData[0].toFixed(2); // ذخیره نتیجه پیش‌بینی
           }
 
           // هنگام بارگذاری صفحه
           onMounted(async () => {
-            let loadedModel = await loadModel();
-            if (!loadedModel) {
-              loadedModel = createModel();
-              await trainModel(loadedModel);
-              await saveModel(loadedModel);
+            try {
+              let loadedModel = await loadModel();
+              if (!loadedModel) {
+                loadedModel = createModel();
+                await trainModel(loadedModel);
+                await saveModel(loadedModel);
+              }
+              model.value = loadedModel;
+            } catch (error) {
+              alert("خطا در بارگذاری صفحه: " + error.message);
+              console.error("Error on page load:", error);
             }
-            model.value = loadedModel;
           });
 
           return {
