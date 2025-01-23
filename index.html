@@ -22,7 +22,7 @@
                   جمع دو عدد با TensorFlow.js و ذخیره در LocalStorage
                 </h1>
               </div>
-              <div class="card-body">
+              <div class="card-body" v-if="isTrain">
                 <form @submit.prevent="sumNumbers">
                   <div class="mb-3">
                     <label for="number1" class="form-label">عدد اول</label>
@@ -72,6 +72,7 @@
           const number1 = ref(0);
           const number2 = ref(0);
           const result = ref(null);
+          const isTrain = ref(false);
           const lastSavedResult = ref(null);
           let model;
           let ysMin, ysMax;
@@ -152,6 +153,7 @@
             });
 
             console.log("Model trained!");
+            isTrain.value = true
 
             // ذخیره مدل در localStorage
             await model.save("localstorage://my-model");
