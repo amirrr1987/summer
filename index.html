@@ -1,209 +1,198 @@
 <!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TensorFlow.js با Vue.js - نسخه ۱.۳</title>
+    <title>TensorFlow.js with Vue 3 and LocalStorage</title>
+    <script src="https://unpkg.com/vue@3.2.31/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.8.0/dist/tf.min.js"></script>
     <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-      integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
-      crossorigin="anonymous"
-    />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Poppins&family=Vazirmatn:wght@100..900&display=swap"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css"
       rel="stylesheet"
     />
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <style>
-      body {
-        font-family: "Vazirmatn", "Poppins", serif;
-        background-color: #f8f9fa;
-        padding: 20px;
-      }
-      .container {
-        max-width: 600px;
-        margin: 0 auto;
-        background: white;
-        padding: 20px;
-        border-radius: 10px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      }
-      input {
-        width: 100%;
-        padding: 10px;
-        margin: 10px 0;
-        border: 1px solid #ddd;
-        border-radius: 5px;
-      }
-      button {
-        width: 100%;
-        padding: 10px;
-        background-color: #007bff;
-        color: white;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
-      }
-      button:hover {
-        background-color: #0056b3;
-      }
-      p {
-        margin-top: 20px;
-        font-size: 18px;
-      }
-    </style>
   </head>
   <body>
     <div id="app">
-      <div class="container">
-        <h1>TensorFlow.js با Vue.js - نسخه ۱.۳</h1>
-        <p>دو عدد وارد کنید:</p>
-        <input v-model.number="input1" type="number" placeholder="عدد اول" />
-        <input v-model.number="input2" type="number" placeholder="عدد دوم" />
-        <button @click="predict">پیش‌بینی</button>
-
-        <p v-if="prediction !== null">نتیجه پیش‌بینی: {{ prediction }}</p>
-        <p v-else>لطفاً اعداد را وارد کنید و روی دکمه پیش‌بینی کلیک کنید.</p>
+      <div class="container mt-5">
+        <div class="row justify-content-center">
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-header">
+                <h1 class="card-title text-center">
+                  جمع دو عدد با TensorFlow.js و ذخیره در LocalStorage
+                </h1>
+              </div>
+              <div class="card-body">
+                <form @submit.prevent="sumNumbers">
+                  <div class="mb-3">
+                    <label for="number1" class="form-label">عدد اول</label>
+                    <input
+                      v-model.number="number1"
+                      type="number"
+                      class="form-control"
+                      id="number1"
+                      placeholder="عدد اول را وارد کنید"
+                    />
+                  </div>
+                  <div class="mb-3">
+                    <label for="number2" class="form-label">عدد دوم</label>
+                    <input
+                      v-model.number="number2"
+                      type="number"
+                      class="form-control"
+                      id="number2"
+                      placeholder="عدد دوم را وارد کنید"
+                    />
+                  </div>
+                  <button type="submit" class="btn btn-primary w-100">
+                    جمع کن
+                  </button>
+                </form>
+                <div class="mt-3">
+                  <p class="text-center fs-4">
+                    نتیجه: <strong>{{ result }}</strong>
+                  </p>
+                  <p class="text-center fs-5">
+                    آخرین نتیجه ذخیره‌شده:
+                    <strong>{{ lastSavedResult }}</strong>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-    <script>
-      console.log("Starting script..."); // دیباگ: بررسی اجرای اسکریپت
 
+    <script>
       const { createApp, ref, onMounted } = Vue;
 
-      console.log("Vue loaded:", Vue); // دیباگ: بررسی بارگذاری Vue
-
-      const app = createApp({
+      createApp({
         setup() {
-          console.log("App setup..."); // دیباگ: بررسی اجرای setup
+          const number1 = ref(0);
+          const number2 = ref(0);
+          const result = ref(null);
+          const lastSavedResult = ref(null);
+          let model;
+          let ysMin, ysMax;
 
-          const input1 = ref(null); // عدد اول
-          const input2 = ref(null); // عدد دوم
-          const prediction = ref(null); // نتیجه پیش‌بینی
-          const model = ref(null); // مدل
-
-          // ساخت مدل ساده
-          function createModel() {
-            console.log("Creating model..."); // دیباگ: بررسی ساخت مدل
-            const model = tf.sequential();
-            model.add(
-              tf.layers.dense({
-                units: 1,
-                inputShape: [2],
-              })
-            );
-            model.compile({
-              optimizer: "sgd",
-              loss: "meanSquaredError",
-            });
-            return model;
-          }
-
-          // آموزش مدل
-          async function trainModel(model) {
-            try {
-              console.log("Training model..."); // دیباگ: بررسی آموزش مدل
-              const inputs = tf.tensor2d([
-                [1, 2],
-                [2, 3],
-                [3, 4],
-              ]);
-              const outputs = tf.tensor2d([[3], [5], [7]]);
-              await model.fit(inputs, outputs, { epochs: 100 });
-              console.log("Model trained!");
-              return model;
-            } catch (error) {
-              alert("خطا در آموزش مدل: " + error.message);
-              console.error("Error training model:", error);
-            }
-          }
-
-          // ذخیره مدل در localStorage
-          async function saveModel(model) {
-            try {
-              console.log("Saving model..."); // دیباگ: بررسی ذخیره مدل
-              await model.save("localstorage://my-model");
-              console.log("Model saved to localStorage.");
-            } catch (error) {
-              alert("خطا در ذخیره مدل: " + error.message);
-              console.error("Error saving model:", error);
-            }
-          }
-
-          // بارگذاری مدل از localStorage
-          async function loadModel() {
-            try {
-              console.log("Loading model..."); // دیباگ: بررسی بارگذاری مدل
-              const loadedModel = await tf.loadLayersModel(
-                "localstorage://my-model"
-              );
-              console.log("Model loaded from localStorage.");
-              return loadedModel;
-            } catch (error) {
-              console.log("No model found in localStorage. Training new model.");
-              return null;
-            }
-          }
-
-          // پیش‌بینی
-          async function predict() {
-            try {
-              console.log("Predicting..."); // دیباگ: بررسی پیش‌بینی
-              if (!model.value) {
-                alert("مدل هنوز بارگذاری نشده است. لطفاً چند لحظه صبر کنید.");
-                return;
-              }
-
-              if (input1.value === null || input2.value === null) {
-                alert("لطفاً هر دو عدد را وارد کنید.");
-                return;
-              }
-
-              const inputTensor = tf.tensor2d([[input1.value, input2.value]]);
-              const result = model.value.predict(inputTensor);
-              const resultData = await result.data();
-              prediction.value = resultData[0].toFixed(2);
-            } catch (error) {
-              alert("خطا در پیش‌بینی: " + error.message);
-              console.error("Error predicting:", error);
-            }
-          }
-
-          // هنگام بارگذاری صفحه
           onMounted(async () => {
-            try {
-              console.log("Page mounted..."); // دیباگ: بررسی mount شدن صفحه
-              await tf.setBackend('cpu');
-              console.log("Backend set to CPU.");
+            const savedResult = localStorage.getItem("lastResult");
+            if (savedResult) {
+              lastSavedResult.value = JSON.parse(savedResult);
+            }
 
-              let loadedModel = await loadModel();
-              if (!loadedModel) {
-                loadedModel = createModel();
-                await trainModel(loadedModel);
-                await saveModel(loadedModel);
-              }
-              model.value = loadedModel;
-            } catch (error) {
-              alert("خطا در بارگذاری مدل: " + error.message);
-              console.error("Error loading model:", error);
+            // بررسی وجود مدل در localStorage
+            if (localStorage.getItem("tensorflowjs_models/my-model")) {
+              model = await tf.loadLayersModel("localstorage://my-model");
+              console.log("Model loaded from localStorage!");
+            } else {
+              console.log(
+                "No model found in localStorage. Training a new model..."
+              );
+              await trainModel();
             }
           });
 
+          async function trainModel() {
+            // ایجاد مدل
+            model = tf.sequential();
+            model.add(
+              tf.layers.dense({
+                units: 128,
+                inputShape: [2],
+                activation: "relu",
+              })
+            );
+            model.add(tf.layers.dense({ units: 64, activation: "relu" }));
+            model.add(tf.layers.dense({ units: 32, activation: "relu" }));
+            model.add(tf.layers.dense({ units: 1 }));
+
+            // کامپایل مدل
+            model.compile({
+              optimizer: tf.train.adam(0.001),
+              loss: "meanSquaredError",
+            });
+
+            // تولید داده‌های آموزشی
+            const generateData = (count, min, max) => {
+              const data = [];
+              for (let i = 0; i < count; i++) {
+                const a = Math.floor(Math.random() * (max - min + 1)) + min;
+                const b = Math.floor(Math.random() * (max - min + 1)) + min;
+                data.push([a, b]);
+              }
+              return data;
+            };
+
+            const xsData = generateData(10000, 1, 1000); // ۱۰۰۰۰ داده تصادفی بین ۱ تا ۱۰۰۰
+            const ysData = xsData.map(([a, b]) => [a + b]); // محاسبه جواب‌ها
+
+            const xs = tf.tensor2d(xsData);
+            const ys = tf.tensor2d(ysData);
+
+            // نرمال‌سازی داده‌ها
+            const xsNormalized = normalize(xs);
+            const ysNormalized = normalize(ys);
+            ysMin = ys.min();
+            ysMax = ys.max();
+
+            // آموزش مدل
+            await model.fit(xsNormalized, ysNormalized, {
+              epochs: 100,
+              batchSize: 32,
+              validationSplit: 0.2,
+              callbacks: {
+                onEpochEnd: (epoch, logs) => {
+                  console.log(
+                    `Epoch ${epoch}: loss = ${logs.loss}, val_loss = ${logs.val_loss}`
+                  );
+                },
+              },
+            });
+
+            console.log("Model trained!");
+
+            // ذخیره مدل در localStorage
+            await model.save("localstorage://my-model");
+            console.log("Model saved to localStorage!");
+          }
+
+          function normalize(tensor) {
+            const max = tensor.max();
+            const min = tensor.min();
+            return tensor.sub(min).div(max.sub(min));
+          }
+
+          function denormalize(tensor, min, max) {
+            return tensor.mul(max.sub(min)).add(min);
+          }
+
+          async function sumNumbers() {
+            if (!model) {
+              alert("Model is not trained yet!");
+              return;
+            }
+
+            const input = tf.tensor2d([[number1.value, number2.value]]);
+            const inputNormalized = normalize(input);
+            const predictionNormalized = model.predict(inputNormalized);
+            const prediction = denormalize(predictionNormalized, ysMin, ysMax);
+            result.value = prediction.dataSync()[0];
+            localStorage.setItem("lastResult", JSON.stringify(result.value));
+            lastSavedResult.value = result.value;
+          }
+
           return {
-            input1,
-            input2,
-            prediction,
-            predict,
+            number1,
+            number2,
+            result,
+            lastSavedResult,
+            sumNumbers,
           };
         },
-      });
-
-      console.log("Mounting app..."); // دیباگ: بررسی mount شدن اپلیکیشن
-      app.mount("#app");
+      }).mount("#app");
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
   </body>
 </html>
