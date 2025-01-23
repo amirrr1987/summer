@@ -72,10 +72,9 @@
           const number1 = ref(0);
           const number2 = ref(0);
           const result = ref(null);
-          const isTrain = ref(false);
           const lastSavedResult = ref(null);
+          const isTrain = ref(false);
           let model;
-          let ysMin, ysMax;
 
           onMounted(async () => {
             const savedResult = localStorage.getItem("lastResult");
@@ -100,47 +99,39 @@
             model = tf.sequential();
             model.add(
               tf.layers.dense({
-                units: 128,
+                units: 64,
                 inputShape: [2],
                 activation: "relu",
               })
             );
-            model.add(tf.layers.dense({ units: 64, activation: "relu" }));
             model.add(tf.layers.dense({ units: 32, activation: "relu" }));
             model.add(tf.layers.dense({ units: 1 }));
 
             // کامپایل مدل
             model.compile({
-              optimizer: tf.train.adam(0.001),
+              optimizer: tf.train.adam(0.01),
               loss: "meanSquaredError",
             });
 
             // تولید داده‌های آموزشی
-            const generateData = (count, min, max) => {
+            // تولید داده‌های آموزشی
+            const generateData = (start, end, step) => {
               const data = [];
-              for (let i = 0; i < count; i++) {
-                const a = Math.floor(Math.random() * (max - min + 1)) + min;
-                const b = Math.floor(Math.random() * (max - min + 1)) + min;
-                data.push([a, b]);
+              for (let i = start; i <= end; i += step) {
+                data.push([i, i + 1]);
               }
               return data;
             };
 
-            const xsData = generateData(10000, 1, 1000); // ۱۰۰۰۰ داده تصادفی بین ۱ تا ۱۰۰۰
+            const xsData = generateData(1, 1000, 1); // تولید داده‌های جدید
             const ysData = xsData.map(([a, b]) => [a + b]); // محاسبه جواب‌ها
 
             const xs = tf.tensor2d(xsData);
             const ys = tf.tensor2d(ysData);
 
-            // نرمال‌سازی داده‌ها
-            const xsNormalized = normalize(xs);
-            const ysNormalized = normalize(ys);
-            ysMin = ys.min();
-            ysMax = ys.max();
-
             // آموزش مدل
-            await model.fit(xsNormalized, ysNormalized, {
-              epochs: 100,
+            await model.fit(xs, ys, {
+              epochs: 1000,
               batchSize: 32,
               validationSplit: 0.2,
               callbacks: {
@@ -160,16 +151,6 @@
             console.log("Model saved to localStorage!");
           }
 
-          function normalize(tensor) {
-            const max = tensor.max();
-            const min = tensor.min();
-            return tensor.sub(min).div(max.sub(min));
-          }
-
-          function denormalize(tensor, min, max) {
-            return tensor.mul(max.sub(min)).add(min);
-          }
-
           async function sumNumbers() {
             if (!model) {
               alert("Model is not trained yet!");
@@ -177,9 +158,7 @@
             }
 
             const input = tf.tensor2d([[number1.value, number2.value]]);
-            const inputNormalized = normalize(input);
-            const predictionNormalized = model.predict(inputNormalized);
-            const prediction = denormalize(predictionNormalized, ysMin, ysMax);
+            const prediction = model.predict(input);
             result.value = prediction.dataSync()[0];
             localStorage.setItem("lastResult", JSON.stringify(result.value));
             lastSavedResult.value = result.value;
