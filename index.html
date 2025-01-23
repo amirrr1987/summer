@@ -67,6 +67,7 @@
                   <p class="text-center fs-5" v-if="isTrain">
                     آموزش انجام شد (Epoch: {{ epochCounter }})
                   </p>
+                  <p class="text-center fs-6">نسخه کد: {{ version }}</p>
                 </div>
               </div>
             </div>
@@ -76,7 +77,7 @@
     </div>
 
     <script>
-      const { createApp, ref, onMounted } = Vue;
+      const { createApp, ref, onMounted, watchEffect } = Vue;
 
       createApp({
         setup() {
@@ -86,6 +87,7 @@
           const lastSavedResult = ref(null);
           const isTrain = ref(false);
           const epochCounter = ref(0); // شمارنده پیشرفت آموزش
+          const version = ref("V0.14"); // نسخه کد
           let model;
 
           onMounted(async () => {
@@ -183,6 +185,7 @@
             lastSavedResult,
             isTrain,
             epochCounter,
+            version,
             sumNumbers,
           };
         },
